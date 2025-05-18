@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head><title>Quiz</title></head>
+<body>
+  <h2>Math Quiz</h2>
+  <select id="count">
+    <option>10</option><option>15</option><option>20</option>
+    <option>25</option><option>30</option><option>35</option>
+    <option>40</option><option>45</option><option>50</option>
+  </select>
+  <button onclick="startQuiz()">Start</button>
+  <form id="quiz"></form>
+  <button onclick="submitQuiz()">Submit</button>
+  <div id="result"></div>
+  <button onclick="loadHistory()">Show History</button>
+  <ul id="history"></ul>
+
+  <script>
+    let expressions = [];
+    let userId = new URLSearchParams(window.location.search).get('userId');
+    
+    async function startQuiz() {
+      const count = document.getElementById('count').value;
+      const res = await fetch(`/generate-quiz/${count}?userId=${userId}`);
+      expressions = await res.json();
+      const quiz = document.getElementById('quiz');
+      quiz.innerHTML = '';
+      expressions.forEach((exp, i) => {
+        quiz.innerHTML += `${i+1}. ${exp} = <input id="ans-${i}"><br>`;
+      });
+    }
+    
+    async function submitQuiz() {
+      const answers = expressions.map((_, i) => document.getElementById(`ans-${i}`).value);
+      const res = await fetch('/submit-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, expressions, answers })
+      });
+      const result = await res.json();
+      document.getElementById('result').innerText = `Score: ${result.score}/${result.total}, Rank: ${result.rank}`;
+    }
+    
+    async function loadHistory() {
+      const res = await fetch(`/history?userId=${userId}`);
+      const data = await res.json();
+      const list = document.getElementById('history');
+      list.innerHTML = '';
+      data.forEach(a => {
+        list.innerHTML += `<li>${new Date(a.date).toLocaleString()} - Score: ${a.score}/${a.totalQuestions}</li>`;
+      });
+    }
+    </script>
+    
+</body>
+</html>
+
+
